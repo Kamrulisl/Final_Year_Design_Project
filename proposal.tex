@@ -1,0 +1,935 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{parskip}
+\usepackage{amsmath}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Premier University Chittagong}
+\lhead{CSE Department}
+\rfoot{Page \thepage}
+\setlength{\headheight}{15pt}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+
+\begin{document}
+\pagenumbering{gobble}
+
+\begin{titlepage}
+    \thispagestyle{empty}
+    \centering
+
+    {\Large \textbf{PREMIER UNIVERSITY, CHATTOGRAM}}\\[0.2cm]
+    {\large Department of Computer Science \& Engineering}\\[0.7cm]
+
+    \includegraphics[width=3.2cm]{figures/puc_logo.png}\\[0.8cm]
+
+    {\Large \textbf{Final Year Design Project Proposal}}\\[0.35cm]
+    {\large On}\\[0.35cm]
+
+    {\Large \textbf{A Consensus-Based Family Document Graph Approach\\[0.3cm]
+    for Civil Registry Inconsistency Detection\\[0.3cm]
+    and Correction in Bangladesh}}\\[1.1cm]
+
+    \begin{tabular}{rl}
+        \textbf{Course Code:} & CSE 4000 \\[0.2cm]
+        \textbf{Credits:} & 4 \\[0.2cm]
+        \textbf{Semester:} & 4th Year \\[0.2cm]
+        \textbf{Session:} & Spring 2026 \\
+    \end{tabular}
+
+    \vfill
+
+    {\large \textbf{Submitted By}}\\[0.35cm]
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Name} & \textbf{Student ID} & \textbf{Section} \\
+        \hline
+        {Md Kamrul Islam} & {0222310005101039} & {A} \\
+        \hline
+        {Md Jahedul Islam} & {0222310005101037} & {A} \\
+        \hline
+        {[Member 3 Name]} & {[ID]} & {[Section]} \\
+        \hline
+    \end{tabular}
+
+    \vfill
+
+    {\large \textbf{Submitted To}}\\[0.25cm]
+    {[Supervisor Name]}\\
+    {[Designation]}\\
+    Department of Computer Science \& Engineering\\
+    Premier University, Chattogram\\[0.6cm]
+
+    {\large \today}
+\end{titlepage}
+\clearpage
+\pagenumbering{arabic}
+
+\begin{abstract}
+In Bangladesh, civil documents such as NID, Birth Certificate, and
+Academic Certificate often contain different versions of the same
+person's name, date of birth, and address. These differences create
+problems during government correction applications because the current
+process mostly handles one correction at a time and depends on manual
+officer checking. This work proposes a consensus-based Family Document
+Graph approach for finding document mismatches inside a family. The
+system collects all written versions of a person's name from NID, Birth
+Certificate, Academic Certificate, and related family documents. It then
+uses a counting method to select the most common version, separates small
+name mistakes from serious mismatches, checks date formats, checks
+parent-child age gaps, and suggests fixed spellings for address parts
+such as Division, District, Upazila, Union, City Corporation, and
+Pourosova. A test dataset of 50 to 100 families will be collected in CSV files, and the
+proposed method will be compared with the old manual correction process
+using Accuracy, Precision, Recall, and F1-Score.
+\end{abstract}
+
+\clearpage
+\tableofcontents
+\clearpage
+
+% ─────────────────────────────────────────
+%  1. INTRODUCTION
+% ─────────────────────────────────────────
+\section{Introduction}
+
+In Bangladesh, civil documents like the National Identity Card (NID),
+Birth Certificate, and Academic Certificate are very important for every
+person. A common problem is that the same person's name, date of birth,
+or address is written in different ways in different documents. This
+causes problems in government offices, job applications, passport work,
+and legal matters.
+
+The problem gets worse in a family. A child's documents must show the
+same parent names that are in the parents' own documents. If a child's
+Father Name field does not match the father's NID name, it takes a long
+time to fix at the office.
+
+Current systems mainly handle one correction application at a time. A user
+submits related documents, and an officer checks them manually. They do not
+automatically look at how one person's name appears in all the family's
+documents. This project gives a new idea called the
+\textbf{Family Document Graph} with a \textbf{Consensus Method}.
+The system finds every place where a person's name is written in all
+family documents, counts which version is written most, and uses that
+as the correct value. It also checks Date of Birth, parent-child age
+gap, and Address for all family members.
+
+% ─────────────────────────────────────────
+%  2. PROBLEM STATEMENT
+% ─────────────────────────────────────────
+\section{Problem Statement}
+
+These are the common problems found in Bangladesh documents:
+
+\begin{itemize}
+    \item \textbf{Name Mismatch:} ``Mohammad Ali'' in Birth Certificate but
+          ``Md. Ali'' in NID. These may be the same person with a small
+          spelling difference, but current systems cannot decide this on their own.
+
+    \item \textbf{Family Name Problem:} A father's name may be written in
+          different ways in his own NID, his son's Birth Certificate, and his
+          daughter's NID. No current system collects all these values together
+          to find the right version.
+
+    \item \textbf{Date Format Difference:} ``01/05/1995'' and ``1995-05-01''
+          are the same date but written in different ways.
+
+    \item \textbf{Wrong Age Gap:} A child must be younger than their parents
+          by a proper number of years.
+
+    \item \textbf{Address Spelling Problem:} The same village or area name
+          may be written in different ways. Division, District, Upazila,
+          Union, City Corporation, and Pourosova names should follow one
+          fixed spelling list.
+
+    \item \textbf{Serious Name Mismatch:} ``Mohammad Ali'' vs.\ ``Md. Akib''
+          may be two different people. This needs a senior officer to check.
+\end{itemize}
+
+Right now, there is no automatic system in Bangladesh that collects a
+person's name from all family documents and uses a counting method to
+find the most correct value.
+
+% ─────────────────────────────────────────
+%  3. LITERATURE REVIEW
+% ─────────────────────────────────────────
+\section{Literature Review}
+
+\subsection{Civil Registry and Identity Systems}
+
+Civil registry and identity systems are used in many countries to store
+personal identity data. Systems such as NADRA in Pakistan, Aadhaar in India,
+and CRVS systems in different countries focus on identity registration,
+unique identity numbers, birth records, death records, or biometric data
+\cite{nadra,uidai,crvs}. These systems are useful for identity management,
+but they are usually not designed to collect every family member's NID,
+Birth Certificate, and Academic Certificate together for family-level
+document checking.
+
+In Bangladesh, NID and Birth Registration systems allow users to apply for
+verification or correction. The user submits related documents, and an
+officer checks the application manually. This process supports correction,
+but it does not automatically find hidden mismatches in other family
+members' documents before approval.
+
+\subsection{Name Matching and Record Linkage}
+
+Name matching is a common problem in data cleaning and record linkage.
+Traditional methods compare strings using edit distance or similarity
+scores, such as the Levenshtein distance and Jaro-Winkler similarity
+\cite{levenshtein,jaro}. These methods can help find spelling differences,
+but they may not be enough for Bangladeshi name patterns such as ``Md.'' and
+``Mohammad''. A small name difference may still mean the same person, while a
+large difference may mean a different person.
+
+This project uses a simple name-level decision idea. For example,
+``Md. Ali'' and ``Mohammad Ali'' can be treated as the same person with a
+small mistake, but ``Mohammad Ali'' and ``Md. Akib'' should be treated as a
+serious mismatch that needs senior officer checking.
+
+\subsection{Consensus Methods in Data Cleaning}
+
+Consensus-based data cleaning selects a value by checking multiple sources
+and choosing the value that appears most often or has the strongest support
+\cite{rahm}. This idea is useful when the same person's name appears in many
+documents. Instead of checking only one application, this project collects all
+name versions from the whole family and uses a counting method to find the
+most supported value.
+
+\subsection{Relationship and Address Validation}
+
+Some data errors cannot be found by name matching only. Parent-child
+relationships also need date-of-birth checks. A parent should be older than
+a child by a proper number of years. Address fields also need fixed spelling
+rules because the same area name may be written differently. This project
+uses a fixed location spelling list for Division, District, Upazila, Union,
+City Corporation, and Pourosova names.
+
+\subsection{Literature Gap}
+
+Existing identity and civil registry systems manage documents and correction
+applications, but they do not combine family-level document linking,
+consensus-based name counting, date-of-birth checks, age-gap checks, and
+address spelling suggestions for Bangladesh civil documents. This gap is the
+main research focus of this project.
+
+% ─────────────────────────────────────────
+%  4. OLD METHOD AND RESEARCH GAP
+% ─────────────────────────────────────────
+\section{Old Method and Research Gap}
+
+\subsection{Old Method}
+
+The old method is the manual government application process. In Bangladesh,
+a user can apply through government sites for NID, Birth Certificate, or
+certificate-related correction. In this method, the user submits related
+documents with the application. Then an officer checks the submitted documents
+and approves or rejects the application.
+
+This process is useful, but it is mostly manual. If another family member's
+document has a wrong name, wrong DOB, or mismatch, the user usually has to
+correct that document first by applying again. The old method does not automatically
+find all family-level mismatches before the officer checks the application.
+
+\begin{center}
+\begin{tabular}{|p{3.2cm}|p{2.5cm}|p{7.3cm}|}
+    \hline
+    \textbf{System/Method} & \textbf{Country} & \textbf{What It Does} \\
+    \hline
+    NADRA & Pakistan & Keeps NID data and body scan information. \\
+    \hline
+    Aadhaar & India & Gives a unique ID number, but does not check family document problems. \\
+    \hline
+    CRVS Systems & Many countries & Keeps birth and death records. \\
+    \hline
+    Bangladesh NID Portal & Bangladesh & Takes NID correction or verification applications with related documents. An officer checks and approves manually. \\
+    \hline
+    Bangladesh Birth Registration & Bangladesh & Takes Birth Certificate applications or corrections with related documents. An officer checks and approves manually. \\
+    \hline
+\end{tabular}
+\end{center}
+
+\subsection{What is Missing in the Old Method}
+
+\begin{enumerate}
+    \item It depends on application submission and officer checking.
+    \item It does not compare NID, Birth Certificate, and Academic Certificate at the same time before approval.
+    \item It may keep family data but does not collect one person's name from all
+          family documents and check them together.
+    \item If another family member's document has a mismatch, the user has to
+          correct it manually first through a separate process.
+    \item It does not check name problems in both Bengali and English together.
+    \item It does not tell the difference between a small name mistake and a
+          serious name mismatch.
+    \item It does not check the age gap between parents and children across all related documents.
+    \item It does not use a counting method to find the most correct value.
+    \item It does not tell the user which value should be fixed.
+\end{enumerate}
+
+\subsection{Research Gap}
+
+This project works on these research gaps:
+
+\begin{enumerate}
+    \item \textbf{No family-wide name search:} The old method does not find all
+          written versions of one person's name from every family document and
+          use them to find the right value.
+
+    \item \textbf{Manual correction before approval:} The old method takes
+          applications and related documents, then officers verify them.
+          But if a family member's related document has a mismatch, the user
+          must correct that document manually first.
+
+    \item \textbf{No counting-based correction:} No current system counts how
+          many times each name version appears in all family documents and uses
+          the most common one as the correct value.
+
+    \item \textbf{No multi-document check:} Most systems check only one document.
+          They do not compare NID, Birth Certificate, and Academic Certificate together.
+
+    \item \textbf{No mismatch level:} The old method does not clearly separate
+          small name mistakes from serious mismatches that need officer checking.
+
+    \item \textbf{No age gap check across documents:} NID systems do not check
+          the age gap between parents and children across documents.
+
+    \item \textbf{No Bangladesh-specific system:} Bangladesh has its own NID
+          and Birth Certificate format, but there is no automatic system for this.
+
+    \item \textbf{No fix suggestion:} The old method may find problems, but
+          they do not tell the user which value to fix.
+\end{enumerate}
+
+% ─────────────────────────────────────────
+%  4. RESEARCH QUESTION
+% ─────────────────────────────────────────
+\section{Research Question}
+
+This project tries to answer this question:
+
+\begin{quote}
+\textit{Does a consensus-based Family Document Graph give better results
+than the old manual correction process for finding and fixing name problems
+in Bangladesh civil registry documents?}
+\end{quote}
+
+% ─────────────────────────────────────────
+%  5. OBJECTIVES
+% ─────────────────────────────────────────
+\section{Objectives}
+
+The main goals of this project are:
+
+\begin{enumerate}
+    \item To build a family-linked database that keeps all document data
+          for every family member.
+
+    \item To find every written version of one person's name from all
+          family documents and build a Family Document Graph.
+
+    \item To use a counting method that picks the most common name version
+          as the correct value.
+
+    \item To separate small name mistakes from serious name problems.
+
+    \item To compare Date of Birth by the real date, not the format.
+
+    \item To check whether parents and children have a proper age gap.
+
+    \item To check Address fields using fixed spelling for Division,
+          District, Upazila, Union, City Corporation, and Pourosova.
+
+    \item To test the new method against the current manual single-correction
+          application process
+          using Accuracy, Precision, Recall, and F1-Score.
+
+    \item To make a clear mismatch report with fix suggestions.
+\end{enumerate}
+
+% ─────────────────────────────────────────
+%  6. SCOPE
+% ─────────────────────────────────────────
+\section{Scope of the Project}
+
+\begin{itemize}
+    \item The system will work for one family with Father, Mother,
+          Son(s), and Daughter(s).
+    \item Documents: NID, Birth Certificate, Academic Certificate.
+    \item Fields: Name (Bn \& En), Father Name (Bn \& En),
+          Mother Name (Bn \& En), Date of Birth, Age Gap, Address.
+    \item The system will work with both Bengali and English text.
+    \item Output: Family Document Graph, most common name, mismatch
+          report, and fix suggestions.
+\end{itemize}
+
+% ─────────────────────────────────────────
+%  7. SYSTEM DESIGN AND METHODOLOGY
+% ─────────────────────────────────────────
+\section{System Design and Methodology}
+
+This project follows a research method based on problem definition, dataset
+creation, old-method baseline testing, proposed-method testing, and result
+comparison.
+
+\subsection{Problem Formulation}
+
+The input of the system is one family record. A family record contains
+Father, Mother, Son(s), and Daughter(s). Each person can have values from
+NID, Birth Certificate, and Academic Certificate. Related family fields, such
+as a child's Father Name or Mother Name, are also used. The data will be
+collected and stored in CSV files before processing.
+
+The output of the system is:
+
+\begin{itemize}
+    \item the most supported name value for each person,
+    \item a list of small mistakes and serious mismatches,
+    \item DOB and age-gap validation result,
+    \item address spelling suggestions,
+    \item and a final mismatch report.
+\end{itemize}
+
+\subsection{Family Document Graph Model}
+
+The proposed method models one family as a graph. Each family member is a
+person node. Each document field that contains a person's name is connected
+to that person node. For example, the father's name can appear in the
+father's NID, father's Birth Certificate, son's Birth Certificate, son's NID,
+and daughter's NID. All of these values become evidence for the father's
+correct name.
+
+\subsection{Consensus-Based Value Selection}
+
+Let \(V_p = \{v_1, v_2, \dots, v_n\}\) be all written versions of a person's
+name \(p\) found across the family documents. The system counts how many
+times each version appears. The most supported value is selected as:
+
+\[
+CorrectName(p) = \arg\max_{v \in V_p} count(v)
+\]
+
+After selecting the most supported value, the system checks the other values.
+Small differences such as ``Md.'' and ``Mohammad'' are marked as small
+mistakes. Very different names are marked as serious mismatches and need
+senior officer verification.
+
+\subsection{DOB, Age-Gap, and Address Rules}
+
+All DOB values are first converted to one standard date format. Then the
+system checks whether the real dates are the same. Date format alone does not
+create a mismatch.
+
+For age-gap checking, the parent must be older than the child by a proper
+number of years. In this proposal, the minimum valid parent-child age gap is
+set as 15 years for testing.
+
+For address checking, the system uses a fixed location spelling list for
+Division, District, Upazila, Union, City Corporation, and Pourosova. If a
+document uses a different spelling, the system suggests the fixed spelling.
+
+\subsection{Research Steps}
+
+This project follows four clear steps.
+
+\subsection{Step 1 --- Collect the CSV Dataset}
+
+There is no public dataset for Bangladesh civil document problems, so
+this project will collect a \textbf{test dataset} in CSV format using
+realistic data patterns.
+
+\begin{itemize}
+    \item \textbf{Size:} 50 to 100 family records.
+    \item \textbf{Format:} CSV files will be used for data collection and testing.
+    \item \textbf{Structure:} Each family has Father, Mother, and one or
+          more children. Each person has NID, Birth Certificate, and
+          Academic Certificate fields.
+    \item \textbf{Problem types included:}
+          \begin{itemize}
+              \item Small name mistakes (e.g., ``Md. Ali'' vs.\ ``Mohammad Ali'')
+              \item Serious name mismatches (e.g., ``Mohammad Ali'' vs.\ ``Md. Akib'')
+              \item Different date formats for the same date
+              \item Wrong age gap between parent and child
+              \item Different spelling for the same address area
+          \end{itemize}
+    \item \textbf{Correct answers:} For each CSV record, the right value will
+          be marked by hand in a ground-truth column so the system result can
+          be checked against it.
+\end{itemize}
+
+\subsection{Step 2 --- Build the Old Method (Single Correction Application)}
+
+Before testing the new method, the current \textbf{single correction
+application} process will be built as the baseline. This old method follows
+the current government application style: the user applies for one correction
+at a time, submits related documents, and an officer checks the submitted
+documents manually.
+
+For example:
+
+\begin{itemize}
+    \item A user applies to correct one NID field.
+    \item A user applies to correct one Birth Certificate field.
+    \item A user submits related documents for that one correction.
+    \item An officer checks the submitted documents and approves or rejects it.
+\end{itemize}
+
+This old method will not build a Family Document Graph. It will not count
+how many times a name appears across all family documents. If a mismatch is
+found in another family member's document, the user has to correct that
+document manually through another application.
+
+This old method will be tested on the same dataset to get baseline results.
+
+\subsection{Step 3 --- Build the New Method (Consensus Family Document Graph)}
+
+The new method will be tested on the same dataset. For each person,
+the system will:
+
+\begin{enumerate}
+    \item Find every place where the person's name is written in all
+          family documents.
+    \item Count how many times each name version appears.
+    \item Pick the most common version as the correct value.
+    \item Mark other versions as small mistakes or serious mismatches.
+    \item Check Date of Birth after fixing the format.
+    \item Check the age gap between parents and children.
+    \item Check address parts using a fixed location spelling list.
+    \item Give fix suggestions.
+\end{enumerate}
+
+\subsection{Step 4 --- Compare Both Methods}
+
+Both methods will be checked using these measures:
+
+\begin{center}
+\begin{tabular}{|p{3cm}|p{10cm}|}
+    \hline
+    \textbf{Measure} & \textbf{Meaning} \\
+    \hline
+    Accuracy & Out of all checks, how many did the system get right? \\
+    \hline
+    Precision & Out of all problems the system found, how many were real problems? \\
+    \hline
+    Recall & Out of all real problems in the data, how many did the system find? \\
+    \hline
+    F1-Score & A single number that combines Precision and Recall. \\
+    \hline
+\end{tabular}
+\end{center}
+
+\vspace{0.3cm}
+The results of both methods will be shown in a table. This will prove
+whether the new method is better than the old one. This comparison is
+the main research part of this project.
+
+% ─────────────────────────────────────────
+%  8. SYSTEM DESIGN
+% ─────────────────────────────────────────
+\section{System Design}
+
+\subsection{System Parts}
+
+The system has three main parts:
+
+\begin{enumerate}
+    \item \textbf{Data Input} --- CSV files containing all family member
+          document data.
+    \item \textbf{Processing} --- Family Document Graph builder, counting
+          engine, name checker, date fixer, and age gap checker.
+    \item \textbf{Output} --- Mismatch report with fix suggestions.
+\end{enumerate}
+
+\subsection{Database Design}
+
+Two tables will be used:
+
+\begin{itemize}
+    \item \textbf{Family Table:} Family\_ID, Family\_Code
+    \item \textbf{Person Table:} All document fields with a \texttt{Role}
+          field (Father / Mother / Son / Daughter) linked to Family\_ID
+\end{itemize}
+
+\subsection{Main Idea: Family Document Graph and Counting Method}
+
+For each person, the system finds every place where their name appears
+across all family documents:
+
+\vspace{0.3cm}
+\textbf{Example --- Finding Father's name from all documents:}
+
+\begin{center}
+\begin{tabular}{|p{5.5cm}|p{5cm}|}
+    \hline
+    \textbf{Document / Field} & \textbf{Name Found} \\
+    \hline
+    Father's NID Name & Md. Ali \\
+    \hline
+    Father's Birth Certificate Name & Mohammad Ali \\
+    \hline
+    Father's Academic Certificate Name & Md. Ali \\
+    \hline
+    Son's Birth Certificate --- Father Name & Mohammad Ali \\
+    \hline
+    Son's NID --- Father Name & Md. Ali \\
+    \hline
+    Son's Certificate --- Father Name & Md. Ali \\
+    \hline
+    Daughter's Birth Certificate --- Father Name & Mohammad Ali \\
+    \hline
+    Daughter's NID --- Father Name & Md. Ali \\
+    \hline
+\end{tabular}
+\end{center}
+
+\vspace{0.3cm}
+\textbf{Count result:}
+\begin{itemize}
+    \item ``Md. Ali'' --- 5 times $\rightarrow$ \textbf{Correct value}
+    \item ``Mohammad Ali'' --- 3 times $\rightarrow$ Small name mistake
+\end{itemize}
+
+\textbf{Fix suggestion:} All documents should use ``Md. Ali''.
+
+\subsection{Other Checks}
+
+\begin{itemize}
+    \item \textbf{Name Level Check} --- Small mistakes (short forms,
+          spelling) vs.\ serious mismatches (completely different names).
+    \item \textbf{Date Fix} --- All date formats are changed to one
+          standard before checking.
+    \item \textbf{Age Gap Check} --- Father and mother must be older
+          than the child by a proper number of years.
+    \item \textbf{Address Check} --- Division, District, Upazila, Union,
+          City Corporation, and Pourosova names are checked against a fixed
+          spelling list. If a spelling does not match, the system suggests
+          the correct fixed spelling.
+\end{itemize}
+
+\subsection{Address Master List}
+
+For address checking, the system will use a fixed spelling list for
+Bangladesh location names. The list will contain:
+
+\begin{itemize}
+    \item Division
+    \item District
+    \item Upazila
+    \item Union
+    \item City Corporation
+    \item Pourosova
+\end{itemize}
+
+If a document uses a different spelling from the fixed list, the system
+will show it as an address spelling mismatch and suggest the fixed spelling.
+For example, if the fixed spelling is ``Chattogram'' but a document writes
+``Chittagong'', the system will suggest ``Chattogram''.
+
+% ─────────────────────────────────────────
+%  9. CHECK LOGIC
+% ─────────────────────────────────────────
+\section{Check Logic}
+
+\subsection{For One Person}
+\begin{itemize}
+    \item Find all name values from all family documents for this person.
+    \item Count each version and pick the most common one as the correct value.
+    \item Mark other values as small mistakes or serious mismatches.
+    \item Check Date of Birth after fixing the format.
+    \item Check each address part against the fixed location spelling list.
+    \item Suggest the fixed spelling if Division, District, Upazila, Union,
+          City Corporation, or Pourosova spelling is wrong.
+\end{itemize}
+
+\subsection{Across Family Members}
+\begin{itemize}
+    \item Check Child's Father Name against Father's correct name.
+    \item Check Child's Mother Name against Mother's correct name.
+    \item Check Father's age gap with each child.
+    \item Check Mother's age gap with each child.
+\end{itemize}
+
+% ─────────────────────────────────────────
+%  10. EXPECTED OUTPUT
+% ─────────────────────────────────────────
+\section{Expected Output}
+
+The system will make a report like this:
+
+\begin{center}
+\begin{tabular}{|p{2.5cm}|p{3.5cm}|p{3cm}|p{3cm}|}
+    \hline
+    \textbf{Person / Field} & \textbf{All Values Found} & \textbf{Correct Value} & \textbf{Result} \\
+    \hline
+    Father --- Name (EN) &
+    NID: Md. Ali \newline Birth: Mohammad Ali \newline Cert: Md. Ali \newline Son Birth F: Mohammad Ali \newline Son NID F: Md. Ali \newline Daughter NID F: Md. Ali &
+    Md. Ali (5/8) &
+    \textcolor{orange}{Small Mistake} \\
+    \hline
+    Father --- DOB &
+    NID: 1980-05-01 \newline Birth: 01/05/1980 &
+    1980-05-01 &
+    \textcolor{green}{Match} \\
+    \hline
+    Age Gap --- Father \& Son &
+    Father: 1980 \newline Son: 2005 &
+    25 years &
+    \textcolor{green}{Valid} \\
+    \hline
+    Address --- District &
+    NID: Chittagong \newline Birth: Chattogram &
+    Chattogram &
+    \textcolor{orange}{Spelling Suggestion} \\
+    \hline
+    Age Gap --- Father \& Child &
+    Father: 1980 \newline Child: 1982 &
+    2 years &
+    \textcolor{red}{Invalid} \\
+    \hline
+\end{tabular}
+\end{center}
+
+\vspace{0.4cm}
+The report will also show the comparison table between the new method
+and the old method, with Accuracy, Precision, Recall, and F1-Score.
+
+% ─────────────────────────────────────────
+%  11. TECHNOLOGY STACK
+% ─────────────────────────────────────────
+\section{Tools and Technology}
+
+\begin{tabular}{ll}
+    \textbf{Data Input:} & CSV files \\
+    \textbf{Frontend:}   & HTML, CSS, JavaScript \\
+    \textbf{Backend:}    & Python (Django / Flask) \\
+    \textbf{Database:}   & MySQL / PostgreSQL \\
+    \textbf{Logic:}      & Python --- counting engine, name checker, \\
+                         & date fixer, age gap checker, address spelling checker \\
+    \textbf{Testing:}    & Python --- Accuracy, Precision, Recall, F1-Score \\
+    \textbf{Report:}     & PDF output (ReportLab) \\
+\end{tabular}
+
+% ─────────────────────────────────────────
+%  12. IMPLEMENTATION PLAN
+% ─────────────────────────────────────────
+\section{Implementation Plan}
+
+\subsection{Data Input Module}
+
+The data input module will read family member information from CSV files.
+Each row will contain one person's document data or one family-related
+document field. The CSV input will include NID, Birth Certificate, Academic
+Certificate, father name, mother name, DOB, and address fields.
+
+\subsection{Family Document Graph Builder}
+
+This module will collect all places where a person's name appears in the
+family documents. It will connect each person with the related document
+fields and create the Family Document Graph.
+
+\subsection{Name Checker and Consensus Engine}
+
+The name checker will count all versions of a person's name and select the
+most common value. It will also classify other values as small mistakes or
+serious mismatches. Serious mismatches will be marked for senior officer
+verification.
+
+\subsection{Date, Age-Gap, and Address Modules}
+
+The date module will convert all dates into one standard format. The age-gap
+module will check whether the parents are older than the children by a proper
+number of years. The address module will compare Division, District, Upazila,
+Union, City Corporation, and Pourosova names with a fixed spelling list.
+
+\subsection{Report Generator}
+
+The report generator will show the most common name, mismatch type, DOB
+result, age-gap result, address spelling suggestion, and final fix
+suggestions.
+
+% ─────────────────────────────────────────
+%  13. RESULTS AND DISCUSSION PLAN
+% ─────────────────────────────────────────
+\section{Results and Discussion Plan}
+
+\subsection{Evaluation Setup}
+
+The proposed method will be tested on the 50 to 100 family CSV test dataset. The
+old manual correction process will be used as the baseline. The same dataset
+will be used for both methods.
+
+\subsection{Quantitative Results}
+
+The result table will compare the old method and the proposed method using
+Accuracy, Precision, Recall, and F1-Score. The evaluation will also count how
+many name errors, DOB errors, age-gap errors, and address spelling errors are
+found by each method.
+
+\begin{center}
+\begin{tabular}{|p{3.5cm}|p{2.3cm}|p{2.3cm}|p{2.3cm}|p{2.3cm}|}
+    \hline
+    \textbf{Method} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+    \hline
+    Old Manual Method & To be tested & To be tested & To be tested & To be tested \\
+    \hline
+    Proposed Method & To be tested & To be tested & To be tested & To be tested \\
+    \hline
+\end{tabular}
+\end{center}
+
+\subsection{Qualitative Discussion}
+
+The discussion will explain which problems the proposed method finds that the
+old manual method misses. It will also discuss how the mismatch report can
+help users and officers before a correction application is submitted.
+
+\subsection{Limitations}
+
+This research may have some limitations. The dataset may be small and partly
+synthetic. The address checker depends on the quality of the fixed spelling
+list. Manual labeling may also create errors if the correct value is not
+marked carefully.
+
+% ─────────────────────────────────────────
+%  14. PROJECT TIMELINE
+% ─────────────────────────────────────────
+\section{Project Timeline}
+
+The project runs over two semesters. The first semester is for planning
+and learning. The second semester is for building, testing, and finishing
+the project.
+
+\vspace{0.4cm}
+\textbf{Semester 1 (CSE 4000A --- 1 Credit)}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+    \hline
+    \textbf{Phase} & \textbf{Task} & \textbf{Time} \\
+    \hline
+    Phase 1 & Topic Study and Literature Review & Week 1--3 \\
+    \hline
+    Phase 2 & Database and System Design & Week 4--6 \\
+    \hline
+    Phase 3 & Collect and Prepare the CSV Test Dataset & Week 7--9 \\
+    \hline
+    Phase 4 & Proposal Writing and Submission & Week 10--12 \\
+    \hline
+\end{tabular}
+\end{center}
+
+\vspace{0.4cm}
+\textbf{Semester 2 (CSE 4000B --- 3 Credits) --- Main Work}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+    \hline
+    \textbf{Phase} & \textbf{Task} & \textbf{Time} \\
+    \hline
+    Phase 5 & Build the Old Method (Single Correction Application) & Week 1--2 \\
+    \hline
+    Phase 6 & Build the Family Document Graph and Counting Engine & Week 3--6 \\
+    \hline
+    Phase 7 & Build Name, Date, Age Gap, and Address Checkers & Week 7--9 \\
+    \hline
+    Phase 8 & Build Web Interface and Report Output & Week 10--11 \\
+    \hline
+    Phase 9 & Test Both Methods and Compare Results & Week 12--13 \\
+    \hline
+    Phase 10 & Final Report Writing and Defense Practice & Week 14--16 \\
+    \hline
+\end{tabular}
+\end{center}
+
+% ─────────────────────────────────────────
+%  13. CONCLUSION
+% ─────────────────────────────────────────
+\section{Conclusion}
+
+This project gives a new way to find and fix name problems in Bangladesh
+civil documents. Instead of handling only one correction application at a
+time, the system finds every version of a person's name from all family
+documents, counts which version appears most, and uses that as the correct
+value. The project tests this new method against the old method to show
+which one works better.
+This project works on a real problem that affects many people in Bangladesh.
+It covers Database Design, Software Engineering, Artificial Intelligence, and
+Data Science. For this reason, it is a good fit for the Final Year Design
+Project of the B.Sc. in CSE program at Premier University Chittagong.
+
+\begin{thebibliography}{9}
+
+\bibitem{nadra}
+National Database and Registration Authority (NADRA), Pakistan identity
+registration system documentation.
+
+\bibitem{uidai}
+Unique Identification Authority of India (UIDAI), Aadhaar documentation.
+
+\bibitem{crvs}
+United Nations, Civil Registration and Vital Statistics (CRVS) systems
+overview.
+
+\bibitem{levenshtein}
+V. I. Levenshtein, ``Binary codes capable of correcting deletions,
+insertions, and reversals,'' Soviet Physics Doklady, 1966.
+
+\bibitem{jaro}
+M. A. Jaro, ``Advances in record-linkage methodology as applied to matching
+the 1985 census of Tampa, Florida,'' Journal of the American Statistical
+Association, 1989.
+
+\bibitem{rahm}
+E. Rahm and H. H. Do, ``Data cleaning: Problems and current approaches,''
+IEEE Data Engineering Bulletin, 2000.
+
+\bibitem{nidbd}
+Bangladesh Election Commission, National Identity Registration Wing,
+NID services and correction process.
+
+\bibitem{birthbd}
+Office of the Registrar General, Bangladesh Birth and Death Registration
+system.
+
+\bibitem{recordlinkage}
+P. Christen, Data Matching: Concepts and Techniques for Record Linkage,
+Entity Resolution, and Duplicate Detection, Springer, 2012.
+
+\end{thebibliography}
+
+\section{Appendices}
+
+\subsection{Appendix A: Sample Dataset Fields}
+
+The CSV dataset will include Family ID, Person ID, Role, NID Name, Birth
+Certificate Name, Academic Certificate Name, Father Name, Mother Name, DOB,
+Division, District, Upazila, Union, City Corporation or Pourosova, Address
+details, and ground-truth correction labels.
+
+\subsection{Appendix B: Sample Location Master List}
+
+The address checker will use a fixed spelling list for Bangladeshi location
+names. Example entries include Division, District, Upazila, Union, City
+Corporation, and Pourosova names.
+
+\vspace{2cm}
+
+\noindent
+\begin{tabular}{p{5cm} p{5cm}}
+    \rule{4cm}{0.5pt} & \rule{4cm}{0.5pt} \\
+    Signature of Group Leader & Signature of Supervisor \\[0.3cm]
+    Name: \underline{\hspace{3cm}} & Name: \underline{\hspace{3cm}} \\
+    Date: \underline{\hspace{3cm}} & Date: \underline{\hspace{3cm}} \\
+\end{tabular}
+
+\end{document}
